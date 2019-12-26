@@ -34,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="RTPStream">
+      <HintPath>..\..\..\..\source\repos\RTPStream\RTPStream\bin\Debug\netstandard2.0\RTPStream.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition">
       <HintPath>..\WebCamWrapper\bin\Release\System.ComponentModel.Composition.dll</HintPath>

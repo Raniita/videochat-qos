@@ -16,23 +16,43 @@ using System.IO;
 // IMAGE
 using System.Drawing.Imaging;
 
+// RTP
+using RTPStream;
+
 namespace WebcamUDPMulticast
 {
     public partial class Form1 : Form
     {
+        // Camera Config
         private CameraFrameSource _frameSource;
         private static Bitmap _latestFrame;
+
+        // Multicast
+        IPAddress video = IPAddress.Parse("224.0.0.4");
+
+        // QoS
+
+        // RTP
+        RTPStream rtp = new RTPStream();
 
         public Form1()
         {
             InitializeComponent();
+
             // Inicializamos los canales de comunicación
             try
             {
+                // Multicast UDP Socket para transmision de video
+                UdpClient videoserver = new UdpClient();
+                videoserver.JoinMulticastGroup(video);
+                IPEndPoint videoremote = new IPEndPoint(video, 8080);
+                
+                // Multicast UDP Socket para chat
+                
 
             } catch(Exception e)
             {
-
+                MessageBox.Show(e.ToString());
             }
         }
 
@@ -87,6 +107,9 @@ namespace WebcamUDPMulticast
                 e.Graphics.DrawImage(_latestFrame, 0, 0, _latestFrame.Width, _latestFrame.Height);
 
                 // Enviamos las imagenes
+                // Forma de mandar Imagenes
+                // public int Send(byte[], int, IPEndPoint);
+                // udpServer.Send(buffer, buffer.Length, remote);
             }
         }
     }
