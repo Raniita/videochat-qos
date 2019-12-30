@@ -14,11 +14,13 @@ namespace RTPStream
         private IPAddress multicast;
 
         // Definitions of RTP
-        //version
-        //
-        //
-        //
-        
+        private byte[] header;
+        private byte[] payload;
+        private byte[] packet;
+        private int sequence;
+        private static int interval = 100;
+
+
         // Constructor stream RTP
         public RTP(String m_uuid, UdpClient m_client, IPAddress m_multicast, IPEndPoint m_remote)
         {
@@ -26,32 +28,111 @@ namespace RTPStream
             this.client = m_client;
             this.remote = m_remote;
             this.multicast = m_multicast;
+            this.sequence = 0;
 
-            client = new UdpClient();
             client.JoinMulticastGroup(multicast);
-        }
-
-        public String sendJPEG(MemoryStream frame)
-        {
-            // Enviamos imagen por el canal
-
-            // Inicializamos el header RTP
-            // 32 x 4 bits de tamaño
-            
-            return "OK!";
-        }
-
-        public String sendPacket(byte[] buffer)
-        {
-            // Enviamos la imagen por el canal
-
-
-            return "OK";
         }
 
         public String test(String a)
         {
             return "OK!";
+        }
+
+        // Construimos el paquete RTP, con la info + header
+        private byte[] newPacket(byte[] data, int nSeq)
+        {
+            int timestamp = nSeq * interval;
+            header = createHeader(nSeq, timestamp);
+            payload = new byte[data.Length];
+            payload = data;
+
+            packet = new byte[data.Length + header.Length];
+
+            for (int i = 0; i < header.Length; i++)
+            {
+                packet[i] = header[i];
+            }
+
+            for (int j = 12; j < packet.Length; j++)
+            {
+                packet[j] = payload[j - 12];
+            }
+
+            return packet;
+        }
+
+        private byte[] createHeader(int nSeq, int mTimestamp)
+        {
+            int version = 2;
+            int padding = 0;
+            int extension = 0;
+            int csrcCount = 0;
+            int marker = 0;
+            int payloadType = 26;
+            int sequence = nSeq;
+            long timestamp = mTimestamp;
+            long SSRC = 0;
+
+            byte[] buf = new byte[12];
+
+            // Assembling according the spec
+            // Byte 1.
+            buf[0] = (byte)((version & 0x3) << 6 | (padding & 0x1) << 5 | (extension & 0x0) << 4 | (csrcCount & 0x0));
+
+            // Byte 2.
+            buf[1] = (byte)((marker & 0x1) << 7 | payloadType & 0x7f);
+
+            // Byte 3 y 4. Numero de secuencia. MSB + LSB. Big endian
+            buf[2] = (byte)((sequenceNumber & 0xff00) >> 8);
+            buf[3] = (byte)(sequenceNumber & 0x00ff);
+
+            // Timestamp on 4 bytes. Big endian
+            buf[4] = (byte)((timestamp & 0xff000000) >> 24);
+            buf[5] = (byte)((timestamp & 0x00ff0000) >> 16);
+            buf[6] = (byte)((timestamp & 0x0000ff00) >> 8);
+            buf[7] = (byte)(timestamp & 0x000000ff);
+
+            // CSRC
+            buf[8] = (byte)((SSRC & 0xff000000) >> 24);
+            buf[9] = (byte)((SSRC & 0x00ff0000) >> 16);
+            buf[10] = (byte)((SSRC & 0x0000ff00) >> 8);
+            buf[11] = (byte)(SSRC & 0x000000ff);
+
+            // Devolvemos todo el header
+            return buf;
+        }
+
+        public String sendPacket(byte[] buffer)
+        {
+            // Enviamos la info por el canal
+            byte[] toSend = newPacket(buffer, sequence);
+
+            try{
+                client.Send(toSend, toSend.Length, remote);
+                sequence++;
+            } catch(Exception e){
+                MessageBox.Show("Error sending.");
+            }
+
+            return "OK";
+        }
+
+        public String sendJPEG(MemoryStream frame)
+        {
+            // Enviamos imagen por el canal
+            byte[] toSend = newPacket(frame.ToArray(), sequence);
+
+            try
+            {
+                client.Send(toSend, toSend.Length, remote);
+                sequence++;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Error sending.");
+            }
+
+            return "OK";
         }
     }
 }
