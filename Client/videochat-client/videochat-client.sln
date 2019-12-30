@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.87
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "videochat-client", "videochat-client\videochat-client.csproj", "{F9E9FD63-F5AB-4A45-9776-E7D1D4804F1A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F9E9FD63-F5AB-4A45-9776-E7D1D4804F1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9E9FD63-F5AB-4A45-9776-E7D1D4804F1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9E9FD63-F5AB-4A45-9776-E7D1D4804F1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9E9FD63-F5AB-4A45-9776-E7D1D4804F1A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0BFB7873-9B02-4304-8049-94ABCD5F9969}
+	EndGlobalSection
+EndGlobal
