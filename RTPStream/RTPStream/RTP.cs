@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.IO;
 using System.Net.Sockets;
 using System.Net;
@@ -83,8 +87,8 @@ namespace RTPStream
             buf[1] = (byte)((marker & 0x1) << 7 | payloadType & 0x7f);
 
             // Byte 3 y 4. Numero de secuencia. MSB + LSB. Big endian
-            buf[2] = (byte)((sequenceNumber & 0xff00) >> 8);
-            buf[3] = (byte)(sequenceNumber & 0x00ff);
+            buf[2] = (byte)((sequence & 0xff00) >> 8);
+            buf[3] = (byte)(sequence & 0x00ff);
 
             // Timestamp on 4 bytes. Big endian
             buf[4] = (byte)((timestamp & 0xff000000) >> 24);
@@ -107,11 +111,14 @@ namespace RTPStream
             // Enviamos la info por el canal
             byte[] toSend = newPacket(buffer, sequence);
 
-            try{
+            try
+            {
                 client.Send(toSend, toSend.Length, remote);
                 sequence++;
-            } catch(Exception e){
-                MessageBox.Show("Error sending.");
+            }
+            catch (Exception e)
+            {
+                //MessageBox.Show("Error sending.");
             }
 
             return "OK";
@@ -129,7 +136,7 @@ namespace RTPStream
             }
             catch (Exception e)
             {
-                MessageBox.Show("Error sending.");
+                //MessageBox.Show("Error sending.");
             }
 
             return "OK";

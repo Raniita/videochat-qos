@@ -42,13 +42,23 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.button6 = new System.Windows.Forms.Button();
+            this.comboBoxAudio = new System.Windows.Forms.ComboBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.button7 = new System.Windows.Forms.Button();
+            this.button8 = new System.Windows.Forms.Button();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.checkBox3 = new System.Windows.Forms.CheckBox();
+            this.checkBox4 = new System.Windows.Forms.CheckBox();
+            this.checkBox5 = new System.Windows.Forms.CheckBox();
+            this.checkBox6 = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // comboBoxCameras
             // 
             this.comboBoxCameras.FormattingEnabled = true;
-            this.comboBoxCameras.Location = new System.Drawing.Point(450, 27);
+            this.comboBoxCameras.Location = new System.Drawing.Point(12, 320);
             this.comboBoxCameras.Margin = new System.Windows.Forms.Padding(2);
             this.comboBoxCameras.Name = "comboBoxCameras";
             this.comboBoxCameras.Size = new System.Drawing.Size(266, 21);
@@ -57,23 +67,23 @@
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(416, 63);
+            this.pictureBox1.Location = new System.Drawing.Point(396, 12);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(299, 193);
+            this.pictureBox1.Size = new System.Drawing.Size(375, 259);
             this.pictureBox1.TabIndex = 1;
             this.pictureBox1.TabStop = false;
             // 
             // listBox1
             // 
             this.listBox1.FormattingEnabled = true;
-            this.listBox1.Location = new System.Drawing.Point(12, 123);
+            this.listBox1.Location = new System.Drawing.Point(15, 107);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(375, 121);
+            this.listBox1.Size = new System.Drawing.Size(375, 134);
             this.listBox1.TabIndex = 2;
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(12, 252);
+            this.richTextBox1.Location = new System.Drawing.Point(15, 250);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.Size = new System.Drawing.Size(294, 41);
             this.richTextBox1.TabIndex = 3;
@@ -81,25 +91,27 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(312, 261);
+            this.button1.Location = new System.Drawing.Point(315, 248);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 4;
             this.button1.Text = "Enviar";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(22, 12);
+            this.button2.Location = new System.Drawing.Point(12, 12);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 5;
             this.button2.Text = "Conectar";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(103, 12);
+            this.button3.Location = new System.Drawing.Point(105, 12);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(75, 23);
             this.button3.TabIndex = 6;
@@ -108,16 +120,17 @@
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(502, 270);
+            this.button4.Location = new System.Drawing.Point(12, 346);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(98, 23);
             this.button4.TabIndex = 7;
             this.button4.Text = "Transmitir video";
             this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(606, 270);
+            this.button5.Location = new System.Drawing.Point(116, 346);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(110, 23);
             this.button5.TabIndex = 8;
@@ -126,7 +139,7 @@
             // 
             // richTextBox2
             // 
-            this.richTextBox2.Location = new System.Drawing.Point(12, 72);
+            this.richTextBox2.Location = new System.Drawing.Point(15, 66);
             this.richTextBox2.Name = "richTextBox2";
             this.richTextBox2.Size = new System.Drawing.Size(141, 23);
             this.richTextBox2.TabIndex = 9;
@@ -135,7 +148,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(9, 56);
+            this.label1.Location = new System.Drawing.Point(12, 50);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(43, 13);
             this.label1.TabIndex = 10;
@@ -144,7 +157,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 107);
+            this.label2.Location = new System.Drawing.Point(12, 92);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(29, 13);
             this.label2.TabIndex = 11;
@@ -153,7 +166,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(613, 12);
+            this.label3.Location = new System.Drawing.Point(9, 305);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(102, 13);
             this.label3.TabIndex = 12;
@@ -168,12 +181,123 @@
             this.button6.Text = "QoS";
             this.button6.UseVisualStyleBackColor = true;
             // 
+            // comboBoxAudio
+            // 
+            this.comboBoxAudio.FormattingEnabled = true;
+            this.comboBoxAudio.Location = new System.Drawing.Point(298, 321);
+            this.comboBoxAudio.Name = "comboBoxAudio";
+            this.comboBoxAudio.Size = new System.Drawing.Size(265, 21);
+            this.comboBoxAudio.TabIndex = 14;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(295, 305);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(102, 13);
+            this.label4.TabIndex = 15;
+            this.label4.Text = "Dispositivo de audio";
+            // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(298, 348);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(98, 23);
+            this.button7.TabIndex = 16;
+            this.button7.Text = "Transmitir audio";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
+            // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(402, 348);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(110, 23);
+            this.button8.TabIndex = 17;
+            this.button8.Text = "Detener transmisión";
+            this.button8.UseVisualStyleBackColor = true;
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoCheck = false;
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(580, 290);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(78, 17);
+            this.checkBox1.TabIndex = 18;
+            this.checkBox1.Text = "Conectado";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // checkBox2
+            // 
+            this.checkBox2.AutoCheck = false;
+            this.checkBox2.AutoSize = true;
+            this.checkBox2.Location = new System.Drawing.Point(580, 334);
+            this.checkBox2.Name = "checkBox2";
+            this.checkBox2.Size = new System.Drawing.Size(78, 17);
+            this.checkBox2.TabIndex = 19;
+            this.checkBox2.Text = "RTP Video";
+            this.checkBox2.UseVisualStyleBackColor = true;
+            // 
+            // checkBox3
+            // 
+            this.checkBox3.AutoCheck = false;
+            this.checkBox3.AutoSize = true;
+            this.checkBox3.Location = new System.Drawing.Point(580, 357);
+            this.checkBox3.Name = "checkBox3";
+            this.checkBox3.Size = new System.Drawing.Size(78, 17);
+            this.checkBox3.TabIndex = 20;
+            this.checkBox3.Text = "RTP Audio";
+            this.checkBox3.UseVisualStyleBackColor = true;
+            // 
+            // checkBox4
+            // 
+            this.checkBox4.AutoCheck = false;
+            this.checkBox4.AutoSize = true;
+            this.checkBox4.Location = new System.Drawing.Point(580, 311);
+            this.checkBox4.Name = "checkBox4";
+            this.checkBox4.Size = new System.Drawing.Size(48, 17);
+            this.checkBox4.TabIndex = 21;
+            this.checkBox4.Text = "Chat";
+            this.checkBox4.UseVisualStyleBackColor = true;
+            // 
+            // checkBox5
+            // 
+            this.checkBox5.AutoCheck = false;
+            this.checkBox5.AutoSize = true;
+            this.checkBox5.Location = new System.Drawing.Point(691, 290);
+            this.checkBox5.Name = "checkBox5";
+            this.checkBox5.Size = new System.Drawing.Size(68, 17);
+            this.checkBox5.TabIndex = 22;
+            this.checkBox5.Text = "Capt Mic";
+            this.checkBox5.UseVisualStyleBackColor = true;
+            // 
+            // checkBox6
+            // 
+            this.checkBox6.AutoSize = true;
+            this.checkBox6.Location = new System.Drawing.Point(691, 313);
+            this.checkBox6.Name = "checkBox6";
+            this.checkBox6.Size = new System.Drawing.Size(80, 17);
+            this.checkBox6.TabIndex = 23;
+            this.checkBox6.Text = "checkBox6";
+            this.checkBox6.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(736, 323);
+            this.ClientSize = new System.Drawing.Size(783, 386);
+            this.Controls.Add(this.checkBox6);
+            this.Controls.Add(this.checkBox5);
+            this.Controls.Add(this.checkBox4);
+            this.Controls.Add(this.checkBox3);
+            this.Controls.Add(this.checkBox2);
+            this.Controls.Add(this.checkBox1);
+            this.Controls.Add(this.button8);
+            this.Controls.Add(this.button7);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.comboBoxAudio);
             this.Controls.Add(this.button6);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
@@ -214,6 +338,16 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.ComboBox comboBoxAudio;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.Button button8;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.CheckBox checkBox2;
+        private System.Windows.Forms.CheckBox checkBox3;
+        private System.Windows.Forms.CheckBox checkBox4;
+        private System.Windows.Forms.CheckBox checkBox5;
+        private System.Windows.Forms.CheckBox checkBox6;
     }
 }
 
