@@ -99,7 +99,7 @@ namespace WebcamUDPMulticast
                 {
                     msg = String.Format("{0}: {1}", username, richTextBox1.Text);
                     encodedmsg = Encoding.UTF8.GetBytes(msg);
-                    chat2server.Send(encodedmsg, encodedmsg.Length, chat2remote);
+                    chat1server.Send(encodedmsg, encodedmsg.Length, chat1remote);
                 } catch(Exception ex)
                 {
                     MessageBox.Show("Error sending the chat message");
@@ -151,15 +151,15 @@ namespace WebcamUDPMulticast
                 audio = new RTP("audio1", audioserver, multicast, audioremote);
 
                 // Enviar chat
-                chat2server = new UdpClient(chat2port);
-                chat2remote = new IPEndPoint(multicast, chat2port);
-                chat2server.JoinMulticastGroup(multicast);
+                chat1server = new UdpClient();
+                chat1remote = new IPEndPoint(multicast, chat1port);
+                chat1server.JoinMulticastGroup(multicast);
 
                 // Recibir chat
-                chat1server = new UdpClient();
-                chat1remote = new IPEndPoint(IPAddress.Any, chat1port);
-                chat1server.Client.Bind(chat1remote);
-                chat1server.JoinMulticastGroup(multicast);
+                chat2server = new UdpClient(chat2port);
+                chat2remote = null;
+                chat2server.JoinMulticastGroup(multicast);
+
                 checkBox4.Checked = true;
 
                 Thread t = new Thread(this.ChatThread);
@@ -193,16 +193,42 @@ namespace WebcamUDPMulticast
 
         private void button4_Click(object sender, EventArgs e)
         {
-            button4.Enabled = false;
-            button5.Enabled = true;
-            checkBox2.Checked = true;
+            if(button2.Enabled == false)
+            {
+                button4.Enabled = false;
+                button5.Enabled = true;
+                checkBox2.Checked = true;
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if (button2.Enabled == false)
+            {
+                button4.Enabled = true;
+                button5.Enabled = false;
+                checkBox2.Checked = false;
+            }
         }
 
         private void button7_Click(object sender, EventArgs e)
         {
-            button7.Enabled = false;
-            button8.Enabled = true;
-            checkBox3.Checked = true;
+            if(button2.Enabled == false)
+            {
+                button7.Enabled = false;
+                button8.Enabled = true;
+                checkBox3.Checked = true;
+            }
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            if (button2.Enabled == false)
+            {
+                button7.Enabled = true;
+                button8.Enabled = false;
+                checkBox3.Checked = false;
+            }
         }
 
         private void drawLatestImage(object sender, PaintEventArgs e)
@@ -212,7 +238,7 @@ namespace WebcamUDPMulticast
                 _latestFrame = new Bitmap(_latestFrame, new Size(460, 270));
                 e.Graphics.DrawImage(_latestFrame, 0, 0, _latestFrame.Width, _latestFrame.Height);
 
-                if (button4.Enabled == false)
+                if (button4.Enabled == false && button2.Enabled == false)
                 {
                     // Transmitimos la imagen
                     // Comprimimos el frame
@@ -231,9 +257,9 @@ namespace WebcamUDPMulticast
         private void ChatThread(){
             // Mantenemos a la escucha el socket
             while(true){
-                byte[] received = chat1server.Receive(ref chat1remote);
+                byte[] received = chat2server.Receive(ref chat2remote);
 
-                msg = Encoding.UTF8.GetString(received);
+                msg = Encoding.UTF8.GetString(received, 0 , received.Length);
                 listBox1.Items.Add(msg);
             }
         }

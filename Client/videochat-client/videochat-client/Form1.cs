@@ -36,8 +36,8 @@ namespace videochat_client
         private static UdpClient videoclient, chat1client, chat2client, audioclient;
         private static IPEndPoint videoremote, chat1remote, chat2remote, audioremote;
         private int videoport = 45040;
-        private int chat1port = 45044;
-        private int chat2port = 45045;
+        private int chat1port = 45041;
+        private int chat2port = 45042;
         private int audioport = 45043;
 
         // Video
@@ -133,14 +133,13 @@ namespace videochat_client
                 audioclient.JoinMulticastGroup(multicast);
 
                 // Enviar Chat
-                chat2client = new UdpClient(chat2port);
+                chat2client = new UdpClient();
                 chat2remote = new IPEndPoint(multicast, chat2port);
                 chat2client.JoinMulticastGroup(multicast);
 
                 // Recibir Chat
-                chat1client = new UdpClient();
-                chat1remote = new IPEndPoint(IPAddress.Any, chat1port);
-                chat1client.Client.Bind(chat1remote);
+                chat1client = new UdpClient(chat1port);
+                chat1remote = null;
                 chat1client.JoinMulticastGroup(multicast);
 
                 Thread t = new Thread(this.ChatThread);
@@ -183,7 +182,7 @@ namespace videochat_client
                     using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
                     { 
                         int read;
-                        packet.Seek(12, SeekOrigin.Begin);
+                        packet.Seek(12, SeekOrigin.Begin);      // Ponemos el puntero a partir de la cabecera RTP
                         while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             ms.Write(buffer, 0, read);
