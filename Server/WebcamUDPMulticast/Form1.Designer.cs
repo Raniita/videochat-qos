@@ -189,6 +189,7 @@
             this.comboBoxAudio.Name = "comboBoxAudio";
             this.comboBoxAudio.Size = new System.Drawing.Size(265, 21);
             this.comboBoxAudio.TabIndex = 14;
+            this.comboBoxAudio.SelectedIndexChanged += new System.EventHandler(this.comboBoxAudio_SelectedIndexChanged);
             // 
             // label4
             // 

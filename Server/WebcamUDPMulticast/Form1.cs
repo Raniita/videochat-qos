@@ -20,9 +20,10 @@ using System.Threading;
 using System.Drawing.Imaging;
 
 // AUDIO
+using Microsoft.DirectX;
 using Microsoft.DirectX.DirectSound;
 using Buffer = Microsoft.DirectX.DirectSound.Buffer;
-//using Alaw;
+using AlawEncoder;
 
 // RTP
 using RTPStream;
@@ -35,19 +36,30 @@ namespace WebcamUDPMulticast
         private CameraFrameSource _frameSource;
         private static Bitmap _latestFrame;
         private MemoryStream jpegFrame;
-        private byte[] byteArray;
+        //private byte[] byteArray;
 
         // Audio Config
+        private Guid record_source;
+        private short channels = 1;
+        private short bitsPerSample = 16;
+        private int samplesPerSecond = 22050;
+
+        private AutoResetEvent autoResetEvent;
+        private Notify notify;
+
+        private Thread audiosender;
+
         private Device device;
         private Capture capture;
-        //private WaveFormat waveFormat;
-        private Buffer buffer;
+        private WaveFormat waveFormat;
+        //private Buffer buffer;
         private BufferDescription bufferDesc;
+        private SecondaryBuffer bufferplayback;
         private int buffersize = 100000;
         private CaptureBuffer captureBuffer;
-        //private CaptureBufferDescription captureBuffDesc;
-        private MemoryStream stream;
-        private byte[] streamBuffer;
+        private CaptureBufferDescription captureBuffDesc;
+        //private MemoryStream stream;
+        //private byte[] streamBuffer;
 
         // Multicast
         private IPAddress multicast = IPAddress.Parse("224.0.0.4");
@@ -86,7 +98,7 @@ namespace WebcamUDPMulticast
             InitCamera();
 
             // Configuramos el audio
-            //InitAudio();
+            InitAudioCombo();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -193,6 +205,7 @@ namespace WebcamUDPMulticast
 
         private void button4_Click(object sender, EventArgs e)
         {
+            // Boton TX Video
             if(button2.Enabled == false)
             {
                 button4.Enabled = false;
@@ -203,6 +216,7 @@ namespace WebcamUDPMulticast
 
         private void button5_Click(object sender, EventArgs e)
         {
+            // Stop TX Video
             if (button2.Enabled == false)
             {
                 button4.Enabled = true;
@@ -213,16 +227,25 @@ namespace WebcamUDPMulticast
 
         private void button7_Click(object sender, EventArgs e)
         {
+            // Boton TX Audio
             if(button2.Enabled == false)
             {
                 button7.Enabled = false;
                 button8.Enabled = true;
                 checkBox3.Checked = true;
+
+                // Iniciamos el audio
+                InitAudioCapture();
+                audiosender = new Thread(new ThreadStart(SendAudio));
+
+                // Start Audio Send
+                audiosender.Start();
             }
         }
 
         private void button8_Click(object sender, EventArgs e)
         {
+            // Stop TX Audio
             if (button2.Enabled == false)
             {
                 button7.Enabled = true;
@@ -285,66 +308,144 @@ namespace WebcamUDPMulticast
             _frameSource.StartFrameCapture();
         }
 
-        private void InitAudio()
+        private void comboBoxAudio_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // Configuramos DirectSound?
+            record_source = (Guid)comboBoxAudio.SelectedValue;
+        }
+
+        class capture_device
+        {
+            public Guid DriverGuid { get; set; }
+            public string Description { get; set; }
+            public string ModuleName { get; set; }
+        }
+
+        List<capture_device> devices = new List<capture_device>();
+
+        private void InitAudioCombo()
+        {
+            // Record Devices
+            CaptureDevicesCollection captureDevicesCollection = new CaptureDevicesCollection();
+            comboBoxAudio.ValueMember = "DriverGuid";
+            comboBoxAudio.DisplayMember = "Description";
+            foreach (DeviceInformation item in captureDevicesCollection)
+            {
+                devices.Add(new capture_device()
+                {
+                    Description = item.Description,
+                    ModuleName = item.ModuleName,
+                    DriverGuid = item.DriverGuid
+                });
+            }
+
+            comboBoxAudio.DataSource = devices;
+            comboBoxAudio.SelectedIndex = 1;
+            record_source = (Guid)comboBoxAudio.SelectedValue;
+        }
+
+        private void InitAudioCapture()
+        {
+            // Configuramos DirectSound
             device = new Device();
+            device.SetCooperativeLevel(this, CooperativeLevel.Normal);
+
+            capture = new Capture(record_source);
 
             // Creamos Waveformat
-            WaveFormat waveFormat = new WaveFormat
+            waveFormat = new WaveFormat
             {
-                BitsPerSample = 16,              // 16 bits
-                BlockAlign = 1,
-                Channels = 1,                    // Stereo
-                AverageBytesPerSecond = 20500,   // 22kHz
-                SamplesPerSecond = 205000,       // 22kHz
+                BitsPerSample = bitsPerSample,                                                                  // 16 bits
+                BlockAlign = (short)(channels * (bitsPerSample / (short)8)),
+                Channels = channels,                                                                            // Stereo
+                AverageBytesPerSecond = (short)(channels * (bitsPerSample / (short)8)) * samplesPerSecond,      // 22kHz
+                SamplesPerSecond = samplesPerSecond,                                                            // 22kHz
                 FormatTag = WaveFormatTag.Pcm
             };
 
-            // CaptureBuffer y BufferDescription
-            bufferDesc = new BufferDescription();
-            buffer = new Buffer(bufferDesc, this.device);
-            bufferDesc.Format = waveFormat;
-            bufferDesc.BufferBytes = buffersize;
-            bufferDesc.ControlPositionNotify = true;
-            bufferDesc.ControlFrequency = true;
-            bufferDesc.ControlPan = true;
-            bufferDesc.ControlVolume = true;
-
-            // Cooperative level
-            device.SetCooperativeLevel(
-                this,
-                CooperativeLevel.Priority   // The cooperative level
-            );
-
-            // Capture
-            CaptureDevicesCollection captureDevices = new CaptureDevicesCollection();
-            foreach (DeviceInformation captureDevice in captureDevices){
-                comboBoxAudio.Items.Add(captureDevice.Description);
-            }
-
-            comboBoxAudio.SelectedIndex = 0;
-            comboBoxAudio.Select();
-            DeviceInformation mic = (DeviceInformation)comboBoxAudio.SelectedItem;
-            capture = new Capture(mic.DriverGuid);
-
-            // Cambios en el buffer
-
-
-            CaptureBufferDescription captureBuffDesc = new CaptureBufferDescription
+            captureBuffDesc = new CaptureBufferDescription
             {
-                BufferBytes = buffersize,
+                BufferBytes = waveFormat.AverageBytesPerSecond / 5,
                 Format = waveFormat
             };
-            captureBuffer = new CaptureBuffer(captureBuffDesc, capture);
 
-            // Stream
-            streamBuffer = new byte[buffersize];
-            for (int i = 0; i < buffersize;i++){
-                streamBuffer[i] = 0;
+            bufferDesc = new BufferDescription
+            {
+                BufferBytes = waveFormat.AverageBytesPerSecond / 5,
+                Format = waveFormat
+            };
+
+            bufferplayback = new SecondaryBuffer(bufferDesc, device);
+            buffersize = captureBuffDesc.BufferBytes;
+        }
+
+        private void CreateNotifyPositions()
+        {
+            try
+            {
+                autoResetEvent = new AutoResetEvent(false);
+                notify = new Notify(captureBuffer);
+                BufferPositionNotify bufferPositionNotify1 = new BufferPositionNotify
+                {
+                    Offset = buffersize / 2 - 1,
+                    EventNotifyHandle = autoResetEvent.SafeWaitHandle.DangerousGetHandle()
+                };
+                BufferPositionNotify bufferPositionNotify2 = new BufferPositionNotify
+                {
+                    Offset = buffersize - 1,
+                    EventNotifyHandle = autoResetEvent.SafeWaitHandle.DangerousGetHandle()
+                };
+
+                notify.SetNotificationPositions(new BufferPositionNotify[] { bufferPositionNotify1, bufferPositionNotify2 });
+            } catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message, "VoiceChat-CreateNotifyPositions ()", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
 
-            stream = new MemoryStream(streamBuffer);
+        private void SendAudio()
+        {
+            try
+            {
+                // IsThreadSendEnd = false;
+
+                // Capturamos el audio y lo enviamos por la red
+                int halfbuffer = buffersize / 2;
+                captureBuffer = new CaptureBuffer(captureBuffDesc, capture);
+                CreateNotifyPositions();
+                captureBuffer.Start(true);
+                bool readFirstBufferPart = true;
+                int offset = 0;
+                MemoryStream memStream = new MemoryStream(halfbuffer);
+
+                while (!button7.Enabled)
+                {
+                    // Esperamos un evento
+                    autoResetEvent.WaitOne();
+                    // Ponemos el puntero al principio del MS
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    // Leemos el Buffer de Captura y lo guardamos en la primera mitad
+                    captureBuffer.Read(offset, memStream, halfbuffer, LockFlag.None);
+                    readFirstBufferPart = !readFirstBufferPart;
+                    offset = readFirstBufferPart ? 0 : halfbuffer;
+
+                    // Preparamos el stream de datos
+                    //byte[] data = memStream.GetBuffer();    // Sin compresión
+                    byte[] data = ALawEncoder.ALawEncode(memStream.GetBuffer());
+
+                    // Enviamos via RTP al usuario.
+                    audio.sendALaw(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error sending audio.");
+            }
+            //finally
+            //{
+            //    //IsThreadSendEnd = true;
+            //
+            //    captureBuffer.Stop();
+            //}
         }
     }
 }

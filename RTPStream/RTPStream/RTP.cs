@@ -43,10 +43,10 @@ namespace RTPStream
         }
 
         // Construimos el paquete RTP, con la info + header
-        private byte[] newPacket(byte[] data, int nSeq)
+        private byte[] newPacket(byte[] data, int nSeq, int type)
         {
             int timestamp = nSeq * interval;
-            header = createHeader(nSeq, timestamp);
+            header = createHeader(nSeq, timestamp, type);
             payload = new byte[data.Length];
             payload = data;
 
@@ -65,14 +65,20 @@ namespace RTPStream
             return packet;
         }
 
-        private byte[] createHeader(int nSeq, int mTimestamp)
+        private byte[] createHeader(int nSeq, int mTimestamp, int mPayloadType)
         {
+            if(this.sequence >= 65535)
+            {
+                nSeq = 0;
+                this.sequence = 0;
+            } 
+            
             int version = 2;
             int padding = 0;
             int extension = 0;
             int csrcCount = 0;
             int marker = 0;
-            int payloadType = 26;
+            int payloadType = mPayloadType;
             int sequence = nSeq;
             long timestamp = mTimestamp;
             long SSRC = 0;
@@ -109,7 +115,7 @@ namespace RTPStream
         public String sendPacket(byte[] buffer)
         {
             // Enviamos la info por el canal
-            byte[] toSend = newPacket(buffer, sequence);
+            byte[] toSend = newPacket(buffer, sequence, 20);
 
             try
             {
@@ -118,7 +124,7 @@ namespace RTPStream
             }
             catch (Exception e)
             {
-                //MessageBox.Show("Error sending.");
+                return "KO";
             }
 
             return "OK";
@@ -127,7 +133,7 @@ namespace RTPStream
         public String sendJPEG(MemoryStream frame)
         {
             // Enviamos imagen por el canal
-            byte[] toSend = newPacket(frame.ToArray(), sequence);
+            byte[] toSend = newPacket(frame.ToArray(), sequence, 26);
 
             try
             {
@@ -136,9 +142,42 @@ namespace RTPStream
             }
             catch (Exception e)
             {
-                //MessageBox.Show("Error sending.");
+                return "KO";
             }
+            return "OK";
+        }
 
+        public String sendALaw(byte[] buffer)
+        {
+            // Enviamos Alaw por el canal
+            byte[] toSend = newPacket(buffer, sequence, 22);
+
+            try
+            {
+                client.Send(toSend, toSend.Length, remote);
+                sequence++;
+            } 
+            catch(Exception e)
+            {
+                return "KO";
+            }
+            return "OK";
+        }
+
+        public String sendAudio(byte[] buffer)
+        {
+            // Enviamos Audio sin comprimir por el canal
+            byte[] toSend = newPacket(buffer, sequence, 21);
+
+            try
+            {
+                client.Send(toSend, toSend.Length, remote);
+                sequence++;
+            }
+            catch (Exception e)
+            {
+                return "KO";
+            }
             return "OK";
         }
     }
