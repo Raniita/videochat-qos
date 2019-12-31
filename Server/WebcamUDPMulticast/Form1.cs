@@ -20,10 +20,10 @@ using System.Threading;
 using System.Drawing.Imaging;
 
 // AUDIO
-using Microsoft.DirectX;
+//using Microsoft.DirectX;
 using Microsoft.DirectX.DirectSound;
-using Buffer = Microsoft.DirectX.DirectSound.Buffer;
-using AlawEncoder;
+//using Buffer = Microsoft.DirectX.DirectSound.Buffer;
+using ALaw;
 
 // RTP
 using RTPStream;

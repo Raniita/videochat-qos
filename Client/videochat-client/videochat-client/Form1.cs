@@ -20,9 +20,9 @@ using System.Threading;
 using System.Drawing.Imaging;
 
 // AUDIO
-//using Microsoft.DirectX.DirectSound;
+using Microsoft.DirectX.DirectSound;
 //using Buffer = Microsoft.DirectX.DirectSound.Buffer;
-//using Alaw;
+using ALaw;
 
 // RTP
 //using RTPStream;
@@ -40,10 +40,29 @@ namespace videochat_client
         private int chat2port = 45042;
         private int audioport = 45043;
 
+        // Audio
+        //private Guid record_source;
+        private short channels = 1;
+        private short bitsPerSample = 16;
+        private int samplesPerSecond = 22050;
+
+        private byte[] audioBytes;
+
+        private Thread receivedAudio;
+        private Device device;
+        //private Capture capture;
+        private WaveFormat waveFormat;
+        //private Buffer buffer;
+        private BufferDescription bufferDesc;
+        private SecondaryBuffer bufferplayback;
+        //private int buffersize = 100000;
+        //private CaptureBuffer captureBuffer;
+        //private CaptureBufferDescription captureBuffDesc;
+
         // Video
         private Thread receivedVideo;
         private byte[] received;
-        private byte[] packet;
+        //private byte[] packet;
         private Image frame;
 
         // Chat
@@ -117,20 +136,26 @@ namespace videochat_client
             // Iniciamos los canales de comunicacion
             try
             {
-                // Transmision de video
+                // Recepcion de video
                 videoclient = new UdpClient();
                 videoremote = new IPEndPoint(IPAddress.Any, videoport);
                 videoclient.Client.Bind(videoremote);
                 videoclient.JoinMulticastGroup(multicast);
 
-                this.receivedVideo = new Thread(new ThreadStart(this.VideoThread));
+                receivedVideo = new Thread(new ThreadStart(VideoThread));
                 receivedVideo.Start();
 
-                // Transmision de audio
+                // Recepcion de audio
                 audioclient = new UdpClient();
                 audioremote = new IPEndPoint(IPAddress.Any, audioport);
                 audioclient.Client.Bind(audioremote);
                 audioclient.JoinMulticastGroup(multicast);
+
+                // Inicializamos el audio
+                InitCaptureSound();
+                // Inicializamos la recepción de Audio
+                receivedAudio = new Thread(new ThreadStart(AudioThread));
+                receivedAudio.Start();
 
                 // Enviar Chat
                 chat2client = new UdpClient();
@@ -202,6 +227,109 @@ namespace videochat_client
                 }
                 
             }
+        }
+
+        public void InitCaptureSound()
+        {
+            device = new Device();
+            device.SetCooperativeLevel(this, CooperativeLevel.Normal);
+
+            //capture = new Capture();
+
+            // Creamos el WaveFormat
+            waveFormat = new WaveFormat
+            {
+                BitsPerSample = bitsPerSample,                                                                  // 16 bits
+                BlockAlign = (short)(channels * (bitsPerSample / (short)8)),
+                Channels = channels,                                                                            // Stereo
+                AverageBytesPerSecond = (short)(channels * (bitsPerSample / (short)8)) * samplesPerSecond,      // 22kHz
+                SamplesPerSecond = samplesPerSecond,                                                            // 22kHz
+                FormatTag = WaveFormatTag.Pcm
+            };
+
+            //captureBuffDesc = new CaptureBufferDescription
+            //{
+            //    BufferBytes = waveFormat.AverageBytesPerSecond / 5,
+            //    Format = waveFormat
+            //};
+
+            bufferDesc = new BufferDescription
+            {
+                BufferBytes = waveFormat.AverageBytesPerSecond / 5,
+                Format = waveFormat
+            };
+
+            bufferplayback = new SecondaryBuffer(bufferDesc, device);
+            //buffersize = captureBuffDesc.BufferBytes;
+        }
+
+        private void AudioThread()
+        {
+            try
+            {
+                //IsThreadReceivedEnd = false;
+
+                byte[] byteData;
+
+                while (!button3.Enabled)
+                {
+                    // Recibimos la info
+                    try
+                    {
+                        try
+                        {
+                            byteData = audioclient.Receive(ref audioremote);
+
+                            // Extraemos el payload del paquete RTP
+                            MemoryStream packet = new MemoryStream(byteData);
+                            //byte[] audioBytes;
+                            byte[] buffer = new byte[byteData.Length - 12];     // Quitamos el tamaño de la cabecera RTP
+                            using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
+                            {
+                                int read;
+                                packet.Seek(12, SeekOrigin.Begin);              // Ponemos el puntero a partir de la cabecera RTP
+                                while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
+                                {
+                                    ms.Write(buffer, 0, read);
+                                }
+                                audioBytes = ms.ToArray();
+                            }
+
+                            // Marcamos como que recibimos RTP Audio
+                            checkBox1.Checked = true;
+                        }
+                        catch (Exception)
+                        {
+                            return;
+                        }
+                        
+                        // Teoria
+                        // G711 comprime la info al 50%, necesitamos hacer el buffer más grande
+                        byte[] byteDecodedData = new byte[audioBytes.Length * 2];
+
+                        //Usando ALaw
+                        ALawDecoder.ALawDecode(audioBytes, out byteDecodedData);
+                        //Sin comprension
+                        //byteDecodedData = new byte[audioBytes.Length];
+                        //byteDecodedData = audioBytes;
+
+                        // Reproducimos la información recibida.
+                        bufferplayback = new SecondaryBuffer(bufferDesc, device);
+                        bufferplayback.Write(0, byteDecodedData, LockFlag.None);
+                        bufferplayback.Play(0, BufferPlayFlags.Default);
+                        checkBox3.Checked = true;
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+            } catch(Exception ex)
+            {
+                MessageBox.Show("Error on audiothread.");
+            }
+
+            //IsThreadReceiveEnd = true;
         }
     }
 }
