@@ -150,7 +150,8 @@ namespace RTPStream
         public String sendALaw(byte[] buffer)
         {
             // Enviamos Alaw por el canal
-            byte[] toSend = newPacket(buffer, sequence, 22);
+            // Payload type == 0 -> Audio
+            byte[] toSend = newPacket(buffer, sequence, 8);
 
             try
             {
@@ -167,7 +168,8 @@ namespace RTPStream
         public String sendAudio(byte[] buffer)
         {
             // Enviamos Audio sin comprimir por el canal
-            byte[] toSend = newPacket(buffer, sequence, 21);
+            // Payload type == 0 -> Audio
+            byte[] toSend = newPacket(buffer, sequence, 0);
 
             try
             {

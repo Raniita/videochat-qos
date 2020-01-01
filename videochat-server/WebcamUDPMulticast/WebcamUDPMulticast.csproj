@@ -41,7 +41,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Windows\Microsoft.NET\DirectX for Managed Code\1.0.2902.0\Microsoft.DirectX.DirectSound.dll</HintPath>
     </Reference>
-    <Reference Include="RTPStream">
+    <Reference Include="RTPStream, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\RTPStream\RTPStream\bin\Debug\RTPStream.dll</HintPath>
     </Reference>
     <Reference Include="System" />
