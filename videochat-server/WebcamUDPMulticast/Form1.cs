@@ -87,6 +87,7 @@ namespace WebcamUDPMulticast
             richTextBox1.Enabled = false;
             button1.Enabled = false;
             listBox1.Items.Add("*** Ingresa tu usuario y pulsa conectar ***");
+            button3.Enabled = false;
             button6.Enabled = false;
             button5.Enabled = false;
             button8.Enabled = false;
@@ -142,6 +143,7 @@ namespace WebcamUDPMulticast
             }
 
             button2.Enabled = false;
+            button3.Enabled = true;
             richTextBox1.Enabled = true;
             button1.Enabled = true;
             listBox1.Items.Clear();
@@ -251,6 +253,16 @@ namespace WebcamUDPMulticast
                 button7.Enabled = true;
                 button8.Enabled = false;
                 checkBox3.Checked = false;
+            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            DialogResult diag = MessageBox.Show("Salir de la aplicación?");
+            if (diag == DialogResult.OK)
+            {
+                Application.ExitThread();
+                Application.Exit();
             }
         }
 

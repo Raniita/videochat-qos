@@ -77,7 +77,7 @@ namespace videochat_client
             richTextBox1.Enabled = false;
             button1.Enabled = false;
             button2.Enabled = false;
-            listBox1.Items.Add("Ingresa tu usuario y pulsa conectar ***");
+            listBox1.Items.Add("*** Ingresa tu usuario y pulsa conectar ***");
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -201,19 +201,21 @@ namespace videochat_client
                     received = videoclient.Receive(ref videoremote);
 
                     // Convertimos a imagen
-                    MemoryStream packet = new MemoryStream(received);
-                    byte[] imagenBytes;
-                    byte[] buffer = new byte[received.Length - 12];
-                    using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
-                    { 
-                        int read;
-                        packet.Seek(12, SeekOrigin.Begin);      // Ponemos el puntero a partir de la cabecera RTP
-                        while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            ms.Write(buffer, 0, read);
-                        }
-                        imagenBytes = ms.ToArray();
-                    }
+                    byte[] imagenBytes = getPayloadRTP(received);
+
+                    //MemoryStream packet = new MemoryStream(received);
+                    //byte[] imagenBytes;
+                    //byte[] buffer = new byte[received.Length - 12];
+                    //using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
+                    //{ 
+                    //    int read;
+                    //    packet.Seek(12, SeekOrigin.Begin);      // Ponemos el puntero a partir de la cabecera RTP
+                    //    while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
+                    //    {
+                    //        ms.Write(buffer, 0, read);
+                    //    }
+                    //    imagenBytes = ms.ToArray();
+                    //}
 
                     frame = Image.FromStream(new MemoryStream(imagenBytes));
                     pictureBox1.Image = new Bitmap(frame, new Size(pictureBox1.Width, pictureBox1.Height));
@@ -225,7 +227,6 @@ namespace videochat_client
                 {
 
                 }
-                
             }
         }
 
@@ -263,6 +264,16 @@ namespace videochat_client
             //buffersize = captureBuffDesc.BufferBytes;
         }
 
+        private void button2_Click(object sender, EventArgs e)
+        {
+            DialogResult diag = MessageBox.Show("Salir de la aplicación?");
+            if (diag == DialogResult.OK)
+            {
+                Application.ExitThread();
+                Application.Exit();
+            }
+        }
+
         private void AudioThread()
         {
             try
@@ -280,44 +291,49 @@ namespace videochat_client
                         {
                             byteData = audioclient.Receive(ref audioremote);
 
+                            byte[] audioBytes = getPayloadRTP(byteData);
+
                             // Extraemos el payload del paquete RTP
-                            MemoryStream packet = new MemoryStream(byteData);
+                            //MemoryStream packet = new MemoryStream(byteData);
                             //byte[] audioBytes;
-                            byte[] buffer = new byte[byteData.Length - 12];     // Quitamos el tamaño de la cabecera RTP
-                            using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
-                            {
-                                int read;
-                                packet.Seek(12, SeekOrigin.Begin);              // Ponemos el puntero a partir de la cabecera RTP
-                                while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
-                                {
-                                    ms.Write(buffer, 0, read);
-                                }
-                                audioBytes = ms.ToArray();
-                            }
+                            //byte[] buffer = new byte[byteData.Length - 12];     // Quitamos el tamaño de la cabecera RTP
+                            //using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
+                            //{
+                            //    int read;
+                            //    packet.Seek(12, SeekOrigin.Begin);              // Ponemos el puntero a partir de la cabecera RTP
+                            //    while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
+                            //    {
+                            //        ms.Write(buffer, 0, read);
+                            //    }
+                            //    audioBytes = ms.ToArray();
+                            //}
+
+                            label3.Text = getTimestampRTP(byteData).ToString();
+                            label4.Text = getSequenceRTP(byteData).ToString();
 
                             // Marcamos como que recibimos RTP Audio
                             checkBox1.Checked = true;
+
+                            // Teoria
+                            // G711 comprime la info al 50%, necesitamos hacer el buffer más grande
+                            byte[] byteDecodedData = new byte[audioBytes.Length * 2];
+
+                            //Usando ALaw
+                            ALawDecoder.ALawDecode(audioBytes, out byteDecodedData);
+                            //Sin comprension
+                            //byteDecodedData = new byte[audioBytes.Length];
+                            //byteDecodedData = audioBytes;
+
+                            // Reproducimos la información recibida.
+                            checkBox3.Checked = true;
+                            bufferplayback = new SecondaryBuffer(bufferDesc, device);
+                            bufferplayback.Write(0, byteDecodedData, LockFlag.None);
+                            bufferplayback.Play(0, BufferPlayFlags.Default);
                         }
                         catch (Exception)
                         {
                             return;
                         }
-                        
-                        // Teoria
-                        // G711 comprime la info al 50%, necesitamos hacer el buffer más grande
-                        byte[] byteDecodedData = new byte[audioBytes.Length * 2];
-
-                        //Usando ALaw
-                        ALawDecoder.ALawDecode(audioBytes, out byteDecodedData);
-                        //Sin comprension
-                        //byteDecodedData = new byte[audioBytes.Length];
-                        //byteDecodedData = audioBytes;
-
-                        // Reproducimos la información recibida.
-                        bufferplayback = new SecondaryBuffer(bufferDesc, device);
-                        bufferplayback.Write(0, byteDecodedData, LockFlag.None);
-                        bufferplayback.Play(0, BufferPlayFlags.Default);
-                        checkBox3.Checked = true;
                     }
                     catch (Exception)
                     {
@@ -331,5 +347,66 @@ namespace videochat_client
 
             //IsThreadReceiveEnd = true;
         }
+
+        #region RTP
+        private uint getTimestampRTP(byte[] receivedData)
+        {
+            uint timestamp;
+
+            MemoryStream packet = new MemoryStream(receivedData);
+            packet.Seek(4, SeekOrigin.Begin);
+            timestamp = ReadUInt32(packet);
+
+            return timestamp;
+        }
+
+        private ushort getSequenceRTP(byte[] receivedData)
+        {
+            ushort seq;
+            
+            MemoryStream packet = new MemoryStream(receivedData);  
+            packet.Seek(2, SeekOrigin.Begin);
+            seq = (ushort)ReadUInt16(packet);
+
+            return seq;
+
+        }
+
+        private byte[] getPayloadRTP(byte[] receivedData)
+        {
+            // Extraemos el payload del paquete RTP
+            MemoryStream packet = new MemoryStream(receivedData);
+            byte[] payload;
+            byte[] buffer = new byte[receivedData.Length - 12];     // Quitamos el tamaño de la cabecera RTP
+            using (MemoryStream ms = new MemoryStream())            // Guardamos el payload en un nuevo memory stream
+            {
+                int read;
+                packet.Seek(12, SeekOrigin.Begin);                  // Ponemos el puntero a partir de la cabecera RTP
+                while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+                payload = ms.ToArray();
+            }
+
+            return payload;
+        }
+        #endregion
+
+        #region utils
+        private static uint ReadUInt32(Stream stream)
+        {
+            return (uint)((stream.ReadByte() << 24)
+                            + (stream.ReadByte() << 16)
+                            + (stream.ReadByte() << 8)
+                            + (stream.ReadByte())); 
+        }
+
+        private static ushort ReadUInt16(Stream stream)
+        {
+            return (ushort)((stream.ReadByte() << 8)
+                            + (stream.ReadByte()));
+        }
+        #endregion
     }
 }

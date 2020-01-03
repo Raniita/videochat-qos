@@ -43,10 +43,13 @@ namespace RTPStream
         }
 
         // Construimos el paquete RTP, con la info + header
-        private byte[] newPacket(byte[] data, int nSeq, int type)
+        private byte[] newPacket(byte[] data, int nSeq, int mPayloadType)
         {
-            int timestamp = nSeq * interval;
-            header = createHeader(nSeq, timestamp, type);
+            //int timestamp = nSeq * interval;
+            // Generamos UNIX timestamp (32 bits)
+            long timestamp = DateTime2Unix(DateTime.Now);
+
+            header = createHeader(nSeq, timestamp, mPayloadType);
             payload = new byte[data.Length];
             payload = data;
 
@@ -65,7 +68,7 @@ namespace RTPStream
             return packet;
         }
 
-        private byte[] createHeader(int nSeq, int mTimestamp, int mPayloadType)
+        private byte[] createHeader(int nSeq, long mTimestamp, int mPayloadType)
         {
             if(this.sequence >= 65535)
             {
@@ -149,8 +152,8 @@ namespace RTPStream
 
         public String sendALaw(byte[] buffer)
         {
-            // Enviamos Alaw por el canal
-            // Payload type == 0 -> Audio
+            // Enviamos Alaw por el canal (G711)
+            // Payload type == 8 -> Audio
             byte[] toSend = newPacket(buffer, sequence, 8);
 
             try
@@ -182,5 +185,14 @@ namespace RTPStream
             }
             return "OK";
         }
+
+        #region utils
+        private static long DateTime2Unix(DateTime now)
+        {
+            TimeSpan timeSpan = now - new DateTime(1970, 1, 1, 0, 0, 0);
+
+            return (long)timeSpan.TotalSeconds;
+        }
+        #endregion
     }
 }
