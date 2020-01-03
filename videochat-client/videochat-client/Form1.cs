@@ -23,6 +23,7 @@ using System.Drawing.Imaging;
 using Microsoft.DirectX.DirectSound;
 //using Buffer = Microsoft.DirectX.DirectSound.Buffer;
 using ALaw;
+using Timer = System.Windows.Forms.Timer;
 
 // RTP
 //using RTPStream;
@@ -69,6 +70,15 @@ namespace videochat_client
         private String username;
         private String msg;
         private byte[] encodedmsg;
+
+        // QoA
+        private Timer timer1;
+        private Timer timer2;
+        private int num_video, num_audio;
+        private long video_prev_time, audio_prev_time;
+        private int video_prev_timestamp, audio_prev_timestamp;
+        private double audio_delay, audio_jitter;
+        private double video_delay, video_jitter;
 
         public Form1()
         {
@@ -145,6 +155,16 @@ namespace videochat_client
                 receivedVideo = new Thread(new ThreadStart(VideoThread));
                 receivedVideo.Start();
 
+                // Timer para los paq/s
+                timer1 = new Timer();
+                timer1.Tick += new EventHandler(analyzeVideo);  // Sacamos parametros de la TX
+                timer1.Interval = 1000;                         // Cada 1000 ms
+                timer1.Start();
+
+                // QoA
+                video_prev_time = 0;
+                video_prev_timestamp = 0;
+
                 // Recepcion de audio
                 audioclient = new UdpClient();
                 audioremote = new IPEndPoint(IPAddress.Any, audioport);
@@ -156,6 +176,16 @@ namespace videochat_client
                 // Inicializamos la recepción de Audio
                 receivedAudio = new Thread(new ThreadStart(AudioThread));
                 receivedAudio.Start();
+
+                // Timer para los paq/s
+                timer2 = new Timer();
+                timer2.Tick += new EventHandler(analyzeAudio);  // Sacamos parametros de la TX
+                timer2.Interval = 1000;                         // Cada 1000 ms
+                timer2.Start();
+
+                // QoA
+                audio_prev_time = 0;
+                audio_prev_timestamp = 0;
 
                 // Enviar Chat
                 chat2client = new UdpClient();
@@ -202,6 +232,7 @@ namespace videochat_client
 
                     // Convertimos a imagen
                     byte[] imagenBytes = getPayloadRTP(received);
+                    num_video++;
 
                     //MemoryStream packet = new MemoryStream(received);
                     //byte[] imagenBytes;
@@ -216,6 +247,28 @@ namespace videochat_client
                     //    }
                     //    imagenBytes = ms.ToArray();
                     //}
+
+                    long video_time = (long)((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds) / 1000;
+                    int video_timestamp = (int)getTimestampRTP(received);
+
+                    // Calculamos Delay + Jitter
+                    if (video_prev_timestamp == 0)
+                    {
+                        video_jitter = 0;
+                    }
+                    else
+                    {
+                        video_delay = (video_time - video_prev_time) - (video_timestamp * 0.00001 - video_prev_timestamp * 0.00001);
+                        video_jitter = video_jitter + (Math.Abs(video_delay) - video_jitter) / 16;
+                    }
+
+                    // Guardamos la información de timestamp + time
+                    video_prev_timestamp = video_timestamp;
+                    video_prev_time = video_time;
+
+                    // Actualizamos las labels
+                    label7.Text = String.Format("Delay: {0:0.00} ms", video_delay);
+                    label8.Text = String.Format("Jitter: {0:0.00} ms", video_jitter);
 
                     frame = Image.FromStream(new MemoryStream(imagenBytes));
                     pictureBox1.Image = new Bitmap(frame, new Size(pictureBox1.Width, pictureBox1.Height));
@@ -266,7 +319,7 @@ namespace videochat_client
 
         private void button2_Click(object sender, EventArgs e)
         {
-            DialogResult diag = MessageBox.Show("Salir de la aplicación?");
+            DialogResult diag = MessageBox.Show("Salir de la aplicacion?");
             if (diag == DialogResult.OK)
             {
                 Application.ExitThread();
@@ -292,6 +345,7 @@ namespace videochat_client
                             byteData = audioclient.Receive(ref audioremote);
 
                             byte[] audioBytes = getPayloadRTP(byteData);
+                            num_audio++;
 
                             // Extraemos el payload del paquete RTP
                             //MemoryStream packet = new MemoryStream(byteData);
@@ -308,8 +362,32 @@ namespace videochat_client
                             //    audioBytes = ms.ToArray();
                             //}
 
-                            label3.Text = getTimestampRTP(byteData).ToString();
-                            label4.Text = getSequenceRTP(byteData).ToString();
+                            long audio_time = (long)((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds ) / 1000;
+                            int audio_timestamp = (int)getTimestampRTP(byteData);
+
+                            // Calculamos Delay + Jitter
+                            if(audio_prev_timestamp == 0)
+                            {
+                                audio_jitter = 0;
+                            } else
+                            {
+                                audio_delay = (audio_time - audio_prev_time) - (audio_timestamp * 0.000125 - audio_prev_timestamp * 0.000125);
+                                audio_jitter = audio_jitter + (Math.Abs(audio_delay) - audio_jitter) / 16;
+                            }
+
+                            // Guardamos la información de timestamp + time
+                            audio_prev_timestamp = audio_timestamp;
+                            audio_prev_time = audio_time;
+
+                            // Actualizamos las labels
+                            label5.Text = String.Format("Delay: {0:0.00} ms", audio_delay);
+                            label6.Text = String.Format("Jitter: {0:0.00} ms", audio_jitter);
+
+                            //long timestamp = DateTime2Unix(DateTime.Now);
+                            //uint timestamp = (uint)(DateTime.Now.ToUniversalTime().Ticks / TimeSpan.TicksPerMillisecond);
+
+                            //label3.Text = String.Format("{0}", getTimestampRTP(byteData));
+                            //label4.Text = getSequenceRTP(byteData).ToString();
 
                             // Marcamos como que recibimos RTP Audio
                             checkBox1.Checked = true;
@@ -407,6 +485,27 @@ namespace videochat_client
             return (ushort)((stream.ReadByte() << 8)
                             + (stream.ReadByte()));
         }
+
+        private static long DateTime2Unix(DateTime now)
+        {
+            TimeSpan timeSpan = now - new DateTime(1970, 1, 1, 0, 0, 0);
+
+            return (long)timeSpan.TotalSeconds;
+        }
         #endregion
+
+        private void analyzeVideo(object sender, EventArgs e)
+        {
+            // Actualizamos el Form
+            label4.Text = String.Format("{0} paq/s", num_video);
+            num_video = 0;
+        }
+
+        private void analyzeAudio(object sender, EventArgs e)
+        {
+            // Actualizamos el Form
+            label3.Text = String.Format("{0} paq/s", num_audio);
+            num_audio = 0;
+        }
     }
 }

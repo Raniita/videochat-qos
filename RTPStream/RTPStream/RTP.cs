@@ -22,7 +22,7 @@ namespace RTPStream
         private byte[] payload;
         private byte[] packet;
         private int sequence;
-        private static int interval = 100;
+        private static int timestamp_interval;
 
 
         // Constructor stream RTP
@@ -45,9 +45,27 @@ namespace RTPStream
         // Construimos el paquete RTP, con la info + header
         private byte[] newPacket(byte[] data, int nSeq, int mPayloadType)
         {
-            //int timestamp = nSeq * interval;
+            switch (mPayloadType)
+            {
+                // Audio 8kHz
+                case 0:
+                    timestamp_interval = 160;
+                    break;
+                // Audio 8kHz
+                case 8:
+                    timestamp_interval = 160;
+                    break;
+                // Video 90kHz
+                case 26:
+                    timestamp_interval = 1800;
+                    break;
+            }
+
+            uint timestamp = (uint)(nSeq * timestamp_interval);
+            
             // Generamos UNIX timestamp (32 bits)
-            long timestamp = DateTime2Unix(DateTime.Now);
+            //long timestamp = DateTime2Unix(DateTime.Now);
+            //int timestamp = (uint)(DateTime.Now.ToUniversalTime().Ticks / TimeSpan.TicksPerMillisecond);
 
             header = createHeader(nSeq, timestamp, mPayloadType);
             payload = new byte[data.Length];
@@ -68,7 +86,7 @@ namespace RTPStream
             return packet;
         }
 
-        private byte[] createHeader(int nSeq, long mTimestamp, int mPayloadType)
+        private byte[] createHeader(int nSeq, uint mTimestamp, int mPayloadType)
         {
             if(this.sequence >= 65535)
             {
@@ -83,7 +101,7 @@ namespace RTPStream
             int marker = 0;
             int payloadType = mPayloadType;
             int sequence = nSeq;
-            long timestamp = mTimestamp;
+            uint timestamp = mTimestamp;
             long SSRC = 0;
 
             byte[] buf = new byte[12];

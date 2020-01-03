@@ -28,11 +28,13 @@ using ALaw;
 // RTP
 using RTPStream;
 
+using Timer = System.Windows.Forms.Timer;
+
 namespace WebcamUDPMulticast
 {
     public partial class Form1 : Form
     {
-        // Camera Config
+        // Camera Configa
         private CameraFrameSource _frameSource;
         private static Bitmap _latestFrame;
         private MemoryStream jpegFrame;
@@ -79,6 +81,10 @@ namespace WebcamUDPMulticast
         private byte[] encodedmsg;
 
         // QoS
+        private Timer timer1;
+        private Timer timer2;
+        private int num_video;
+        private int num_audio;
 
         public Form1()
         {
@@ -157,12 +163,28 @@ namespace WebcamUDPMulticast
                 videoremote = new IPEndPoint(multicast, videoport);
                 // Implementando mi clase RTP
                 video = new RTP("video1", videoserver, multicast, videoremote);
+                
+                // Timer para los paq/s
+                timer1 = new Timer();
+                timer1.Tick += new EventHandler(analyzeVideo);  // Sacamos parametros de la TX
+                timer1.Interval = 1000;                         // Cada 1000 ms
+                timer1.Start();
 
                 // Transmision audio
                 audioserver = new UdpClient();
                 audioremote = new IPEndPoint(multicast, audioport);
                 // Implementacion mi clase RTP
                 audio = new RTP("audio1", audioserver, multicast, audioremote);
+
+                // Iniciamos el audio
+                InitAudioCapture();
+                audiosender = new Thread(new ThreadStart(SendAudio));
+
+                // Timer para los paq/s
+                timer2 = new Timer();
+                timer2.Tick += new EventHandler(analyzeAudio);  // Sacamos parametros de la TX
+                timer2.Interval = 1000;                         // Cada 1000 ms
+                timer2.Start();
 
                 // Enviar chat
                 chat1server = new UdpClient();
@@ -236,12 +258,9 @@ namespace WebcamUDPMulticast
                 button8.Enabled = true;
                 checkBox3.Checked = true;
 
-                // Iniciamos el audio
-                InitAudioCapture();
-                audiosender = new Thread(new ThreadStart(SendAudio));
-
                 // Start Audio Send
                 audiosender.Start();
+
             }
         }
 
@@ -285,6 +304,7 @@ namespace WebcamUDPMulticast
 
                     // Enviamos por el canal
                     video.sendJPEG(jpegFrame);
+                    num_video++;
                 }
             }
         }
@@ -446,6 +466,7 @@ namespace WebcamUDPMulticast
 
                     // Enviamos via RTP al usuario.
                     audio.sendALaw(data);
+                    num_audio++;
                 }
             }
             catch (Exception ex)
@@ -458,6 +479,20 @@ namespace WebcamUDPMulticast
             //
             //    captureBuffer.Stop();
             //}
+        }
+
+        private void analyzeVideo(object sender, EventArgs e)
+        {
+            // Actualizamos el Form
+            label5.Text = String.Format("{0} paq/s", num_video);
+            num_video = 0;
+        }
+
+        private void analyzeAudio(object sender, EventArgs e)
+        {
+            // Actualizamos el Form
+            label6.Text = String.Format("{0} paq/s", num_audio);
+            num_audio = 0;
         }
     }
 }
