@@ -20,7 +20,6 @@ using System.Threading;
 using System.Drawing.Imaging;
 
 // AUDIO
-//using Microsoft.DirectX;
 using Microsoft.DirectX.DirectSound;
 //using Buffer = Microsoft.DirectX.DirectSound.Buffer;
 using ALaw;
@@ -38,7 +37,6 @@ namespace WebcamUDPMulticast
         private CameraFrameSource _frameSource;
         private static Bitmap _latestFrame;
         private MemoryStream jpegFrame;
-        //private byte[] byteArray;
 
         // Audio Config
         private Guid record_source;
@@ -54,14 +52,11 @@ namespace WebcamUDPMulticast
         private Device device;
         private Capture capture;
         private WaveFormat waveFormat;
-        //private Buffer buffer;
         private BufferDescription bufferDesc;
         private SecondaryBuffer bufferplayback;
         private int buffersize = 100000;
         private CaptureBuffer captureBuffer;
         private CaptureBufferDescription captureBuffDesc;
-        //private MemoryStream stream;
-        //private byte[] streamBuffer;
 
         // Multicast
         private readonly int videoport = 45040;
@@ -97,6 +92,7 @@ namespace WebcamUDPMulticast
             button6.Enabled = false;
             button5.Enabled = false;
             button8.Enabled = false;
+            button6.Visible = false;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -231,6 +227,7 @@ namespace WebcamUDPMulticast
             // Boton TX Video
             if(button2.Enabled == false)
             {
+                comboBoxCameras.Enabled = false;
                 button4.Enabled = false;
                 button5.Enabled = true;
                 checkBox2.Checked = true;
@@ -242,6 +239,7 @@ namespace WebcamUDPMulticast
             // Stop TX Video
             if (button2.Enabled == false)
             {
+                comboBoxCameras.Enabled = true;
                 button4.Enabled = true;
                 button5.Enabled = false;
                 checkBox2.Checked = false;
@@ -253,6 +251,7 @@ namespace WebcamUDPMulticast
             // Boton TX Audio
             if(button2.Enabled == false)
             {
+                comboBoxAudio.Enabled = false;
                 button7.Enabled = false;
                 button8.Enabled = true;
                 checkBox3.Checked = true;
@@ -268,6 +267,7 @@ namespace WebcamUDPMulticast
             // Stop TX Audio
             if (button2.Enabled == false)
             {
+                comboBoxAudio.Enabled = true;
                 button7.Enabled = true;
                 button8.Enabled = false;
                 checkBox3.Checked = false;
@@ -437,8 +437,6 @@ namespace WebcamUDPMulticast
         {
             try
             {
-                // IsThreadSendEnd = false;
-
                 // Capturamos el audio y lo enviamos por la red
                 int halfbuffer = buffersize / 2;
                 captureBuffer = new CaptureBuffer(captureBuffDesc, capture);
@@ -472,24 +470,18 @@ namespace WebcamUDPMulticast
             {
                 MessageBox.Show("Error sending audio.");
             }
-            //finally
-            //{
-            //    //IsThreadSendEnd = true;
-            //
-            //    captureBuffer.Stop();
-            //}
         }
 
         private void analyzeVideo(object sender, EventArgs e)
         {
-            // Actualizamos el Form
+            // Calculamos los paq/s enviados
             label5.Text = String.Format("{0} paq/s", num_video);
             num_video = 0;
         }
 
         private void analyzeAudio(object sender, EventArgs e)
         {
-            // Actualizamos el Form
+            // Calculamos los paq/s enviados
             label6.Text = String.Format("{0} paq/s", num_audio);
             num_audio = 0;
         }

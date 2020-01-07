@@ -62,10 +62,6 @@ namespace RTPStream
             }
 
             uint timestamp = (uint)(nSeq * timestamp_interval);
-            
-            // Generamos UNIX timestamp (32 bits)
-            //long timestamp = DateTime2Unix(DateTime.Now);
-            //int timestamp = (uint)(DateTime.Now.ToUniversalTime().Ticks / TimeSpan.TicksPerMillisecond);
 
             header = createHeader(nSeq, timestamp, mPayloadType);
             payload = new byte[data.Length];
@@ -123,7 +119,7 @@ namespace RTPStream
             buf[6] = (byte)((timestamp & 0x0000ff00) >> 8);
             buf[7] = (byte)(timestamp & 0x000000ff);
 
-            // CSRC
+            // SSRC
             buf[8] = (byte)((SSRC & 0xff000000) >> 24);
             buf[9] = (byte)((SSRC & 0x00ff0000) >> 16);
             buf[10] = (byte)((SSRC & 0x0000ff00) >> 8);
@@ -143,7 +139,7 @@ namespace RTPStream
                 client.Send(toSend, toSend.Length, remote);
                 sequence++;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return "KO";
             }
@@ -153,7 +149,8 @@ namespace RTPStream
 
         public String sendJPEG(MemoryStream frame)
         {
-            // Enviamos imagen por el canal
+            // Enviamos imagen por el canal (JPEG)
+            // Payload type == 26 -> JPEG
             byte[] toSend = newPacket(frame.ToArray(), sequence, 26);
 
             try
@@ -161,7 +158,7 @@ namespace RTPStream
                 client.Send(toSend, toSend.Length, remote);
                 sequence++;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return "KO";
             }
@@ -179,7 +176,7 @@ namespace RTPStream
                 client.Send(toSend, toSend.Length, remote);
                 sequence++;
             } 
-            catch(Exception e)
+            catch(Exception)
             {
                 return "KO";
             }
@@ -197,20 +194,11 @@ namespace RTPStream
                 client.Send(toSend, toSend.Length, remote);
                 sequence++;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return "KO";
             }
             return "OK";
         }
-
-        #region utils
-        private static long DateTime2Unix(DateTime now)
-        {
-            TimeSpan timeSpan = now - new DateTime(1970, 1, 1, 0, 0, 0);
-
-            return (long)timeSpan.TotalSeconds;
-        }
-        #endregion
     }
 }

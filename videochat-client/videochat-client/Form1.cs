@@ -21,7 +21,6 @@ using System.Drawing.Imaging;
 
 // AUDIO
 using Microsoft.DirectX.DirectSound;
-//using Buffer = Microsoft.DirectX.DirectSound.Buffer;
 using ALaw;
 using Timer = System.Windows.Forms.Timer;
 
@@ -47,23 +46,15 @@ namespace videochat_client
         private short bitsPerSample = 16;
         private int samplesPerSecond = 22050;
 
-        private byte[] audioBytes;
-
         private Thread receivedAudio;
         private Device device;
-        //private Capture capture;
         private WaveFormat waveFormat;
-        //private Buffer buffer;
         private BufferDescription bufferDesc;
         private SecondaryBuffer bufferplayback;
-        //private int buffersize = 100000;
-        //private CaptureBuffer captureBuffer;
-        //private CaptureBufferDescription captureBuffDesc;
 
         // Video
         private Thread receivedVideo;
         private byte[] received;
-        //private byte[] packet;
         private Image frame;
 
         // Chat
@@ -110,7 +101,7 @@ namespace videochat_client
                     encodedmsg = Encoding.UTF8.GetBytes(msg);
                     chat2client.Send(encodedmsg, encodedmsg.Length, chat2remote);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     MessageBox.Show("Error sending the chat message");
                 }
@@ -119,6 +110,16 @@ namespace videochat_client
                     listBox1.Items.Add(msg);
                     richTextBox1.Text = "";
                 }
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            DialogResult diag = MessageBox.Show("Salir de la aplicacion?");
+            if (diag == DialogResult.OK)
+            {
+                Application.ExitThread();
+                Application.Exit();
             }
         }
 
@@ -286,8 +287,6 @@ namespace videochat_client
             device = new Device();
             device.SetCooperativeLevel(this, CooperativeLevel.Normal);
 
-            //capture = new Capture();
-
             // Creamos el WaveFormat
             waveFormat = new WaveFormat
             {
@@ -299,12 +298,6 @@ namespace videochat_client
                 FormatTag = WaveFormatTag.Pcm
             };
 
-            //captureBuffDesc = new CaptureBufferDescription
-            //{
-            //    BufferBytes = waveFormat.AverageBytesPerSecond / 5,
-            //    Format = waveFormat
-            //};
-
             bufferDesc = new BufferDescription
             {
                 BufferBytes = waveFormat.AverageBytesPerSecond / 5,
@@ -312,25 +305,12 @@ namespace videochat_client
             };
 
             bufferplayback = new SecondaryBuffer(bufferDesc, device);
-            //buffersize = captureBuffDesc.BufferBytes;
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            DialogResult diag = MessageBox.Show("Salir de la aplicacion?");
-            if (diag == DialogResult.OK)
-            {
-                Application.ExitThread();
-                Application.Exit();
-            }
         }
 
         private void AudioThread()
         {
             try
             {
-                //IsThreadReceivedEnd = false;
-
                 byte[] byteData;
 
                 while (!button3.Enabled)
@@ -345,29 +325,12 @@ namespace videochat_client
                             byte[] audioBytes = getPayloadRTP(byteData);
                             num_audio++;
 
-                            // Extraemos el payload del paquete RTP
-                            //MemoryStream packet = new MemoryStream(byteData);
-                            //byte[] audioBytes;
-                            //byte[] buffer = new byte[byteData.Length - 12];     // Quitamos el tamaño de la cabecera RTP
-                            //using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
-                            //{
-                            //    int read;
-                            //    packet.Seek(12, SeekOrigin.Begin);              // Ponemos el puntero a partir de la cabecera RTP
-                            //    while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
-                            //    {
-                            //        ms.Write(buffer, 0, read);
-                            //    }
-                            //    audioBytes = ms.ToArray();
-                            //}
-
                             // Guardamos el numero de sequencia
-                            int seq = (int)getSequenceRTP(byteData);
-                            sequence_audio.Add(seq);
+                            sequence_audio.Add((int)getSequenceRTP(byteData));
 
                             // Obtenemos los tiempos
                             long audio_time = (long)((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds ) / 1000;
                             int audio_timestamp = (int)getTimestampRTP(byteData);
-
 
                             // Calculamos Delay + Jitter
                             if(audio_prev_timestamp == 0)
@@ -386,12 +349,6 @@ namespace videochat_client
                             // Actualizamos las labels
                             label5.Text = String.Format("Delay: {0:0.00} ms", audio_delay);
                             label6.Text = String.Format("Jitter: {0:0.00} ms", audio_jitter);
-
-                            //long timestamp = DateTime2Unix(DateTime.Now);
-                            //uint timestamp = (uint)(DateTime.Now.ToUniversalTime().Ticks / TimeSpan.TicksPerMillisecond);
-
-                            //label3.Text = String.Format("{0}", getTimestampRTP(byteData));
-                            //label4.Text = getSequenceRTP(byteData).ToString();
 
                             // Marcamos como que recibimos RTP Audio
                             checkBox1.Checked = true;
@@ -422,12 +379,10 @@ namespace videochat_client
 
                     }
                 }
-            } catch(Exception ex)
+            } catch(Exception)
             {
                 MessageBox.Show("Error on audiothread.");
             }
-
-            //IsThreadReceiveEnd = true;
         }
 
         #region RTP
@@ -489,20 +444,6 @@ namespace videochat_client
             return (ushort)((stream.ReadByte() << 8)
                             + (stream.ReadByte()));
         }
-
-        private IEnumerable<int> FindMissing(IEnumerable<int> values)
-        {
-            HashSet<int> myRange = new HashSet<int>(Enumerable.Range(values.First(), values.Last()));
-            myRange.ExceptWith(values);
-            return myRange;
-        }
-
-        //private static long DateTime2Unix(DateTime now)
-        //{
-        //    TimeSpan timeSpan = now - new DateTime(1970, 1, 1, 0, 0, 0);
-        //
-        //    return (long)timeSpan.TotalSeconds;
-        //}
         #endregion
 
         private void analyzeVideo(object sender, EventArgs e)
@@ -526,9 +467,6 @@ namespace videochat_client
             }
 
             sequence_video.Clear();
-
-            // Label para debug
-            //label11.Text = String.Format("{0}", String.Join(",", result.ToArray()));
 
             // Calculamos Paq perdidos %
             float video_loss = (lost_video/total_video) * 100;
@@ -557,9 +495,6 @@ namespace videochat_client
             }
 
             sequence_audio.Clear();
-
-            // Label para debug
-            //label11.Text = String.Format("{0}", String.Join(",", result.ToArray()));
 
             // Calculamos Paq perdidos %
             float audio_loss = (lost_audio / total_audio) * 100;
