@@ -34,7 +34,7 @@ namespace WebcamUDPMulticast
 {
     public partial class Form1 : Form
     {
-        // Camera Configa
+        // Camera Config
         private CameraFrameSource _frameSource;
         private static Bitmap _latestFrame;
         private MemoryStream jpegFrame;
@@ -42,9 +42,9 @@ namespace WebcamUDPMulticast
 
         // Audio Config
         private Guid record_source;
-        private short channels = 1;
-        private short bitsPerSample = 16;
-        private int samplesPerSecond = 22050;
+        private readonly short channels = 1;
+        private readonly short bitsPerSample = 16;
+        private readonly int samplesPerSecond = 22050;
 
         private AutoResetEvent autoResetEvent;
         private Notify notify;
@@ -64,13 +64,13 @@ namespace WebcamUDPMulticast
         //private byte[] streamBuffer;
 
         // Multicast
+        private readonly int videoport = 45040;
+        private readonly int chat1port = 45041;
+        private readonly int chat2port = 45042;
+        private readonly int audioport = 45043;
         private IPAddress multicast = IPAddress.Parse("224.0.0.4");
         private static UdpClient videoserver, chat1server, chat2server, audioserver;
         private static IPEndPoint videoremote, chat1remote, chat2remote, audioremote;
-        private int videoport = 45040;
-        private int chat1port = 45041;
-        private int chat2port = 45042;
-        private int audioport = 45043;
         
         private RTP video;
         private RTP audio;
@@ -119,7 +119,7 @@ namespace WebcamUDPMulticast
                     msg = String.Format("{0}: {1}", username, richTextBox1.Text);
                     encodedmsg = Encoding.UTF8.GetBytes(msg);
                     chat1server.Send(encodedmsg, encodedmsg.Length, chat1remote);
-                } catch(Exception ex)
+                } catch(Exception)
                 {
                     MessageBox.Show("Error sending the chat message");
                 }
@@ -130,7 +130,6 @@ namespace WebcamUDPMulticast
                 }
             }
         }
-
 
         private void button2_Click(object sender, EventArgs e)
         {
@@ -430,7 +429,7 @@ namespace WebcamUDPMulticast
                 notify.SetNotificationPositions(new BufferPositionNotify[] { bufferPositionNotify1, bufferPositionNotify2 });
             } catch(Exception ex)
             {
-                MessageBox.Show(ex.Message, "VoiceChat-CreateNotifyPositions ()", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error on CreatePositionNotify", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

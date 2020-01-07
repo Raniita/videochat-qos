@@ -74,16 +74,19 @@ namespace videochat_client
         // QoA
         private Timer timer1;
         private Timer timer2;
-        private int num_video, num_audio;
+        private int num_video, num_audio, total_audio, total_video;
         private long video_prev_time, audio_prev_time;
         private int video_prev_timestamp, audio_prev_timestamp;
         private double audio_delay, audio_jitter;
         private double video_delay, video_jitter;
+        private float lost_audio, lost_video;
+        private List<int> sequence_audio, sequence_video;
 
         public Form1()
         {
             InitializeComponent();
 
+            label11.Text = "";
             richTextBox1.Enabled = false;
             button1.Enabled = false;
             button2.Enabled = false;
@@ -151,6 +154,8 @@ namespace videochat_client
                 videoremote = new IPEndPoint(IPAddress.Any, videoport);
                 videoclient.Client.Bind(videoremote);
                 videoclient.JoinMulticastGroup(multicast);
+                lost_video = 0;
+                sequence_video = new List<int>();
 
                 receivedVideo = new Thread(new ThreadStart(VideoThread));
                 receivedVideo.Start();
@@ -173,6 +178,8 @@ namespace videochat_client
 
                 // Inicializamos el audio
                 InitCaptureSound();
+                lost_audio = 0;
+                sequence_audio = new List<int>();
                 // Inicializamos la recepción de Audio
                 receivedAudio = new Thread(new ThreadStart(AudioThread));
                 receivedAudio.Start();
@@ -234,20 +241,11 @@ namespace videochat_client
                     byte[] imagenBytes = getPayloadRTP(received);
                     num_video++;
 
-                    //MemoryStream packet = new MemoryStream(received);
-                    //byte[] imagenBytes;
-                    //byte[] buffer = new byte[received.Length - 12];
-                    //using (MemoryStream ms = new MemoryStream())        // Guardamos la imagen en un nuevo memory stream
-                    //{ 
-                    //    int read;
-                    //    packet.Seek(12, SeekOrigin.Begin);      // Ponemos el puntero a partir de la cabecera RTP
-                    //    while ((read = packet.Read(buffer, 0, buffer.Length)) > 0)
-                    //    {
-                    //        ms.Write(buffer, 0, read);
-                    //    }
-                    //    imagenBytes = ms.ToArray();
-                    //}
+                    // Guardamos el numero de sequencia
+                    int seq = (int)getSequenceRTP(received);
+                    sequence_video.Add(seq);
 
+                    // Obtenemos los tiempos
                     long video_time = (long)((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds) / 1000;
                     int video_timestamp = (int)getTimestampRTP(received);
 
@@ -276,7 +274,7 @@ namespace videochat_client
                     // Marcamos como que recibimos RTP Video
                     checkBox2.Checked = true;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
 
                 }
@@ -362,8 +360,14 @@ namespace videochat_client
                             //    audioBytes = ms.ToArray();
                             //}
 
+                            // Guardamos el numero de sequencia
+                            int seq = (int)getSequenceRTP(byteData);
+                            sequence_audio.Add(seq);
+
+                            // Obtenemos los tiempos
                             long audio_time = (long)((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds ) / 1000;
                             int audio_timestamp = (int)getTimestampRTP(byteData);
+
 
                             // Calculamos Delay + Jitter
                             if(audio_prev_timestamp == 0)
@@ -486,26 +490,82 @@ namespace videochat_client
                             + (stream.ReadByte()));
         }
 
-        private static long DateTime2Unix(DateTime now)
+        private IEnumerable<int> FindMissing(IEnumerable<int> values)
         {
-            TimeSpan timeSpan = now - new DateTime(1970, 1, 1, 0, 0, 0);
-
-            return (long)timeSpan.TotalSeconds;
+            HashSet<int> myRange = new HashSet<int>(Enumerable.Range(values.First(), values.Last()));
+            myRange.ExceptWith(values);
+            return myRange;
         }
+
+        //private static long DateTime2Unix(DateTime now)
+        //{
+        //    TimeSpan timeSpan = now - new DateTime(1970, 1, 1, 0, 0, 0);
+        //
+        //    return (long)timeSpan.TotalSeconds;
+        //}
         #endregion
 
         private void analyzeVideo(object sender, EventArgs e)
         {
-            // Actualizamos el Form
+            total_video += num_video;
+
+            // Calculamos Paq/s
             label4.Text = String.Format("{0} paq/s", num_video);
             num_video = 0;
+
+            // Comprobamos los numeros de secuencia
+            try
+            {
+                List<int> copy_video = sequence_video;
+                copy_video.Sort();
+                List<int> result_video = Enumerable.Range(copy_video.First(), copy_video.Count()).Except(sequence_video).ToList();
+                lost_video += result_video.Count();
+            } catch(Exception)
+            {
+
+            }
+
+            sequence_video.Clear();
+
+            // Label para debug
+            //label11.Text = String.Format("{0}", String.Join(",", result.ToArray()));
+
+            // Calculamos Paq perdidos %
+            float video_loss = (lost_video/total_video) * 100;
+            label10.Text = String.Format("Perdidas {0} %", video_loss);
         }
 
         private void analyzeAudio(object sender, EventArgs e)
         {
-            // Actualizamos el Form
+            total_audio += num_audio;
+
+            // Calculamos Paq/s
             label3.Text = String.Format("{0} paq/s", num_audio);
             num_audio = 0;
+
+            // Comprobamos los numeros de secuencia
+            try
+            {
+                List<int> copy_audio = sequence_audio;
+                copy_audio.Sort();
+                List<int> result_audio = Enumerable.Range(copy_audio.First(), copy_audio.Count()).Except(sequence_audio).ToList();
+                lost_audio += result_audio.Count();
+            }
+            catch (Exception)
+            {
+
+            }
+
+            sequence_audio.Clear();
+
+            // Label para debug
+            //label11.Text = String.Format("{0}", String.Join(",", result.ToArray()));
+
+            // Calculamos Paq perdidos %
+            float audio_loss = (lost_audio / total_audio) * 100;
+            label9.Text = String.Format("Perdidas {0} %", audio_loss);
+
+
         }
     }
 }
